@@ -1,0 +1,58 @@
+FROM ruby:3.3-bullseye
+
+ENV LC_ALL=en_US.UTF-8
+
+RUN set -ex \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        apt-transport-https \
+        supervisor \
+        openssh-server \
+        cron \
+        locales \
+        net-tools \
+        dnsutils \
+        rsync \
+        screen \
+        curl \
+        wget \
+        gnupg \
+        vim \
+        git-core \
+        logrotate \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+    && locale-gen \
+    && update-locale LANG=en_US.UTF-8 LANGUAGE=en_US:en:
+
+RUN mkdir -p /var/log/supervisor \
+    && echo '[supervisord]\nnodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:cron]\ncommand=/usr/sbin/cron -f' >> /etc/supervisor/conf.d/cron.conf \
+    && mkdir -p /var/run/sshd \
+    && echo '[program:sshd]\ncommand=/usr/sbin/sshd -D' >> /etc/supervisor/conf.d/sshd.conf
+
+RUN apt-get update \
+    && apt-get install -y curl gnupg2 ca-certificates lsb-release \
+    && curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor > /usr/share/keyrings/nginx-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian `lsb_release -cs` nginx" > /etc/apt/sources.list.d/nginx.list \
+    && apt-get update \
+    && apt-get install -y nginx \
+    && echo '[program:nginx]\ncommand=nginx -g "daemon off;"' >> /etc/supervisor/conf.d/nginx.conf \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+
+EXPOSE 22 80
+
+CMD ["sh", "-c", "env >> /etc/environment ; /usr/bin/supervisord"]
