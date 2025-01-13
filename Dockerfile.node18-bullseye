@@ -49,7 +49,7 @@ RUN wget -O - https://openresty.org/package/pubkey.gpg | apt-key add - \
     && apt-get install -y --no-install-recommends openresty \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && echo '[program:sshd]\ncommand=/usr/bin/openresty -g "daemon off;"' >> /etc/supervisor/conf.d/openresty.conf
+    && echo '[program:openresty]\ncommand=/usr/bin/openresty -g "daemon off;"' >> /etc/supervisor/conf.d/openresty.conf
 
 RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get update \
